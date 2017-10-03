@@ -8,6 +8,8 @@ from sklearn.model_selection import StratifiedKFold, train_test_split, \
 from sklearn.metrics import confusion_matrix, roc_auc_score, f1_score, \
                             recall_score, precision_score
 
+import ipdb
+
 def main():
     # Load data
     # --------------------------------------------------------------------------
@@ -22,13 +24,13 @@ def main():
     print('Generating arrays...')
     X, X_validate, y, y_validate, feature_labels  = get_scikit_arrays(
                                                     df_main_trimmed,
-                                                    space_type_df,diff=False)
+                                                    space_type_df)
     
     # Run GridSearch to optimize hyper-parameters
     # ------------------------------------------------------------------------
     print('Running GridSearch...')
     best_params = RandomForestGridSearch(X, y, cv = 3)
-    pd.DataFrame(estimator.best_params_, index = [0]).to_csv(
+    pd.DataFrame(best_params, index = [0]).to_csv(
         'GridSearch_best_params.csv')
     
     # Apply optimized model to the left out test set
@@ -83,7 +85,8 @@ def load_data(data_fname, space_fname):
     # Group by id to count each subjects # of hours (filter users with
     # missing data)
     df_main_grouped = df_main.loc[:,['device_uuid', 'avg_co2',
-                                       'avg_voc']].groupby(by='device_uuid')
+                                     'avg_voc', 'avg_dust']].groupby(
+                                                               by='device_uuid')
 
     # Identify subjects where we have 7 days and 24 hours for each day
     df_user_N = df_main_grouped.aggregate(pd.DataFrame.count)
@@ -98,6 +101,7 @@ def load_data(data_fname, space_fname):
     # Filter based on expected # of hours (filter users with missing data)
     df_main_trimmed = df_main[df_main.n_hrs_co2==expected_n_hrs]
     df_main_trimmed = df_main_trimmed[df_main_trimmed.n_hrs_voc==expected_n_hrs]
+
     df_main_trimmed = df_main_trimmed[df_main_trimmed.n_hrs_dust
                                       ==expected_n_hrs]
     df_main_unlabeled = df_main_trimmed.copy()
